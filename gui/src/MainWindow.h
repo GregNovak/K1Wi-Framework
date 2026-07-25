@@ -8,6 +8,7 @@ class QPushButton;
 class QLineEdit;
 class QCheckBox;
 class QTabWidget;
+class QStackedWidget;
 class QWidget;
 class QComboBox;
 
@@ -87,6 +88,29 @@ private:
     QTextEdit *elfInfoFindingsLog;
     QTextEdit *elfInfoOutputLog;
 
+    QWidget *readSearchTab;
+    QTabWidget *readSearchDetailsTabs;
+    QComboBox *readSearchOperationCombo;
+    QLineEdit *readSearchTargetPath;
+    QStackedWidget *readSearchModeStack;
+
+    QWidget *readModePage;
+
+    QWidget *searchModePage;
+    QComboBox *searchPatternSourceCombo;
+    QComboBox *searchInterpretationCombo;
+    QLineEdit *searchPatternValue;
+    QLineEdit *searchPatternsFilePath;
+    QPushButton *searchPatternsBrowseButton;
+    QLineEdit *searchBeforeValue;
+    QLineEdit *searchAfterValue;
+    QLineEdit *searchBeforeHexValue;
+    QLineEdit *searchAfterHexValue;
+    QCheckBox *searchFlagOnlyCheck;
+
+    QTextEdit *readSearchFindingsLog;
+    QTextEdit *readSearchOutputLog;
+
     QWidget *entropyTab;
     QTabWidget *entropyDetailsTabs;
     QComboBox *entropyModeCombo;
@@ -112,6 +136,7 @@ private:
     void buildStringTab();
     void buildMagicTab();
     void buildElfInfoTab();
+    void buildReadSearchTab();
     void buildEntropyTab();
     void buildPcapTab();
     
@@ -123,6 +148,7 @@ private:
     void runStringCommand();
     void runMagicCommand();
     void runElfInfoCommand();
+    void runReadSearchCommand();
     void runEntropyCommand();
     void runPcapCommand();
 };

@@ -744,6 +744,7 @@ MainWindow::MainWindow(QWidget *parent)
     buildStringTab();
     buildMagicTab();
     buildElfInfoTab();
+    buildReadSearchTab();
     buildEntropyTab();
     buildPcapTab();
     
@@ -756,6 +757,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabs->addTab(stringTab, "STRING");
     tabs->addTab(magicTab, "MAGIC");
     tabs->addTab(elfInfoTab, "ELFINFO");
+    tabs->addTab(readSearchTab, "READ/SEARCH");
     tabs->addTab(entropyTab, "ENTROPY");
     tabs->addTab(pcapTab, "PCAP");
     
@@ -2754,6 +2756,540 @@ void MainWindow::buildElfInfoTab()
             );
         }
     );
+}
+
+
+\
+void MainWindow::buildReadSearchTab()
+{
+    readSearchTab = new QWidget(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout(readSearchTab);
+
+    QLabel *title = new QLabel(
+        QStringLiteral("K1Wi Framework - READ / SEARCH"),
+        readSearchTab
+    );
+    mainLayout->addWidget(title);
+
+    QLabel *description = new QLabel(
+        QStringLiteral(
+            "Inspect file contents with READ or search binary data using "
+            "ASCII patterns, hexadecimal byte sequences, pattern files, "
+            "and configurable context extraction."
+        ),
+        readSearchTab
+    );
+    description->setWordWrap(true);
+    mainLayout->addWidget(description);
+
+    QHBoxLayout *operationLayout = new QHBoxLayout();
+
+    readSearchOperationCombo = new QComboBox(readSearchTab);
+    readSearchOperationCombo->addItem(
+        QStringLiteral("READ file contents"),
+        QStringLiteral("READ")
+    );
+    readSearchOperationCombo->addItem(
+        QStringLiteral("SEARCH file patterns"),
+        QStringLiteral("SEARCH")
+    );
+
+    operationLayout->addWidget(
+        new QLabel(QStringLiteral("Operation:"), readSearchTab)
+    );
+    operationLayout->addWidget(readSearchOperationCombo);
+    operationLayout->addStretch();
+
+    mainLayout->addLayout(operationLayout);
+
+    QHBoxLayout *targetLayout = new QHBoxLayout();
+
+    readSearchTargetPath = new QLineEdit(readSearchTab);
+    readSearchTargetPath->setPlaceholderText(
+        QStringLiteral("Select a target file")
+    );
+
+    QPushButton *targetBrowseButton = new QPushButton(
+        QStringLiteral("Browse Target"),
+        readSearchTab
+    );
+
+    targetLayout->addWidget(
+        new QLabel(QStringLiteral("Target file:"), readSearchTab)
+    );
+    targetLayout->addWidget(readSearchTargetPath);
+    targetLayout->addWidget(targetBrowseButton);
+
+    mainLayout->addLayout(targetLayout);
+
+    readSearchModeStack = new QStackedWidget(readSearchTab);
+
+    // --------------------------------------------------------
+    // READ page
+    // --------------------------------------------------------
+
+    readModePage = new QWidget(readSearchModeStack);
+    QVBoxLayout *readLayout = new QVBoxLayout(readModePage);
+    readLayout->setContentsMargins(0, 0, 0, 0);
+
+    readSearchModeStack->addWidget(readModePage);
+
+    // --------------------------------------------------------
+    // SEARCH page
+    // --------------------------------------------------------
+
+    searchModePage = new QWidget(readSearchModeStack);
+    QVBoxLayout *searchLayout = new QVBoxLayout(searchModePage);
+    searchLayout->setContentsMargins(0, 0, 0, 0);
+    searchLayout->setSpacing(8);
+
+    // The CLI-facing source selector remains available internally.
+    // The visible interface uses a simpler pattern-file checkbox.
+    searchPatternSourceCombo = new QComboBox(searchModePage);
+    searchPatternSourceCombo->addItem(
+        QStringLiteral("Single pattern"),
+        QStringLiteral("single")
+    );
+    searchPatternSourceCombo->addItem(
+        QStringLiteral("Pattern file"),
+        QStringLiteral("file")
+    );
+    searchPatternSourceCombo->hide();
+
+    // --------------------------------------------------------
+    // Primary SEARCH controls
+    // --------------------------------------------------------
+
+    QGroupBox *searchGroup = new QGroupBox(
+        QStringLiteral("Search"),
+        searchModePage
+    );
+
+    QVBoxLayout *searchGroupLayout =
+        new QVBoxLayout(searchGroup);
+
+    QWidget *singlePatternRow = new QWidget(searchGroup);
+    QHBoxLayout *singlePatternLayout =
+        new QHBoxLayout(singlePatternRow);
+    singlePatternLayout->setContentsMargins(0, 0, 0, 0);
+
+    searchPatternValue = new QLineEdit(singlePatternRow);
+    searchPatternValue->setPlaceholderText(
+        QStringLiteral("Enter text or hexadecimal bytes to find")
+    );
+
+    singlePatternLayout->addWidget(
+        new QLabel(QStringLiteral("Search for:"), singlePatternRow)
+    );
+    singlePatternLayout->addWidget(searchPatternValue);
+
+    searchGroupLayout->addWidget(singlePatternRow);
+
+    QWidget *patternFileRow = new QWidget(searchGroup);
+    QHBoxLayout *patternFileLayout =
+        new QHBoxLayout(patternFileRow);
+    patternFileLayout->setContentsMargins(0, 0, 0, 0);
+
+    searchPatternsFilePath = new QLineEdit(patternFileRow);
+    searchPatternsFilePath->setPlaceholderText(
+        QStringLiteral("Select a file containing one pattern per line")
+    );
+
+    searchPatternsBrowseButton = new QPushButton(
+        QStringLiteral("Browse"),
+        patternFileRow
+    );
+
+    patternFileLayout->addWidget(
+        new QLabel(QStringLiteral("Pattern file:"), patternFileRow)
+    );
+    patternFileLayout->addWidget(searchPatternsFilePath);
+    patternFileLayout->addWidget(searchPatternsBrowseButton);
+
+    searchGroupLayout->addWidget(patternFileRow);
+
+    QHBoxLayout *searchTypeLayout = new QHBoxLayout();
+
+    searchInterpretationCombo = new QComboBox(searchGroup);
+    searchInterpretationCombo->addItem(
+        QStringLiteral("Text"),
+        QStringLiteral("--ascii")
+    );
+    searchInterpretationCombo->addItem(
+        QStringLiteral("Hex bytes"),
+        QStringLiteral("--hex")
+    );
+
+    searchTypeLayout->addWidget(
+        new QLabel(QStringLiteral("Search type:"), searchGroup)
+    );
+    searchTypeLayout->addWidget(searchInterpretationCombo);
+    searchTypeLayout->addStretch();
+
+    searchGroupLayout->addLayout(searchTypeLayout);
+    searchLayout->addWidget(searchGroup);
+
+    // --------------------------------------------------------
+    // Progressive-disclosure advanced controls
+    // --------------------------------------------------------
+
+    QPushButton *advancedSearchButton = new QPushButton(
+        QStringLiteral("Advanced Search Options  ▸"),
+        searchModePage
+    );
+    advancedSearchButton->setCheckable(true);
+
+    searchLayout->addWidget(advancedSearchButton);
+
+    QWidget *advancedSearchPanel = new QWidget(searchModePage);
+    QVBoxLayout *advancedLayout =
+        new QVBoxLayout(advancedSearchPanel);
+    advancedLayout->setContentsMargins(12, 0, 0, 0);
+    advancedLayout->setSpacing(8);
+
+    QCheckBox *patternFileCheck = new QCheckBox(
+        QStringLiteral("Load patterns from a file"),
+        advancedSearchPanel
+    );
+    advancedLayout->addWidget(patternFileCheck);
+
+    QGroupBox *contextGroup = new QGroupBox(
+        QStringLiteral("Match context"),
+        advancedSearchPanel
+    );
+
+    QVBoxLayout *contextGroupLayout =
+        new QVBoxLayout(contextGroup);
+
+    QHBoxLayout *asciiContextLayout = new QHBoxLayout();
+
+    searchBeforeValue = new QLineEdit(contextGroup);
+    searchBeforeValue->setPlaceholderText(QStringLiteral("0"));
+    searchBeforeValue->setMaximumWidth(90);
+
+    searchAfterValue = new QLineEdit(contextGroup);
+    searchAfterValue->setPlaceholderText(QStringLiteral("0"));
+    searchAfterValue->setMaximumWidth(90);
+
+    asciiContextLayout->addWidget(
+        new QLabel(QStringLiteral("Text bytes before:"), contextGroup)
+    );
+    asciiContextLayout->addWidget(searchBeforeValue);
+    asciiContextLayout->addSpacing(12);
+    asciiContextLayout->addWidget(
+        new QLabel(QStringLiteral("Text bytes after:"), contextGroup)
+    );
+    asciiContextLayout->addWidget(searchAfterValue);
+    asciiContextLayout->addStretch();
+
+    contextGroupLayout->addLayout(asciiContextLayout);
+
+    QHBoxLayout *hexContextLayout = new QHBoxLayout();
+
+    searchBeforeHexValue = new QLineEdit(contextGroup);
+    searchBeforeHexValue->setPlaceholderText(QStringLiteral("0"));
+    searchBeforeHexValue->setMaximumWidth(90);
+
+    searchAfterHexValue = new QLineEdit(contextGroup);
+    searchAfterHexValue->setPlaceholderText(QStringLiteral("0"));
+    searchAfterHexValue->setMaximumWidth(90);
+
+    hexContextLayout->addWidget(
+        new QLabel(QStringLiteral("Hex bytes before:"), contextGroup)
+    );
+    hexContextLayout->addWidget(searchBeforeHexValue);
+    hexContextLayout->addSpacing(12);
+    hexContextLayout->addWidget(
+        new QLabel(QStringLiteral("Hex bytes after:"), contextGroup)
+    );
+    hexContextLayout->addWidget(searchAfterHexValue);
+    hexContextLayout->addStretch();
+
+    contextGroupLayout->addLayout(hexContextLayout);
+
+    QLabel *hexContextNote = new QLabel(
+        QStringLiteral(
+            "Hex context values use hexadecimal notation. "
+            "For example, 10 requests 16 bytes."
+        ),
+        contextGroup
+    );
+    hexContextNote->setWordWrap(true);
+    contextGroupLayout->addWidget(hexContextNote);
+
+    advancedLayout->addWidget(contextGroup);
+
+    searchFlagOnlyCheck = new QCheckBox(
+        QStringLiteral("Only show likely CTF flags"),
+        advancedSearchPanel
+    );
+    advancedLayout->addWidget(searchFlagOnlyCheck);
+
+    advancedSearchPanel->hide();
+    searchLayout->addWidget(advancedSearchPanel);
+
+    connect(
+        advancedSearchButton,
+        &QPushButton::toggled,
+        this,
+        [
+            this,
+            advancedSearchButton,
+            advancedSearchPanel
+        ](bool expanded) {
+            advancedSearchPanel->setVisible(expanded);
+
+            advancedSearchButton->setText(
+                expanded
+                    ? QStringLiteral("Advanced Search Options  ▾")
+                    : QStringLiteral("Advanced Search Options  ▸")
+            );
+
+            searchModePage->adjustSize();
+            readSearchModeStack->setFixedHeight(
+                searchModePage->sizeHint().height()
+            );
+        }
+    );
+
+    connect(
+        patternFileCheck,
+        &QCheckBox::toggled,
+        this,
+        [this](bool enabled) {
+            searchPatternSourceCombo->setCurrentIndex(
+                enabled ? 1 : 0
+            );
+        }
+    );
+
+    readSearchModeStack->addWidget(searchModePage);
+
+    readSearchModeStack->setSizePolicy(
+        QSizePolicy::Preferred,
+        QSizePolicy::Maximum
+    );
+
+    mainLayout->addWidget(readSearchModeStack, 0);
+
+    QPushButton *runButton = new QPushButton(
+        QStringLiteral("Run READ"),
+        readSearchTab
+    );
+
+    QPushButton *clearButton = new QPushButton(
+        QStringLiteral("Clear Results"),
+        readSearchTab
+    );
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(runButton);
+    buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
+
+    mainLayout->addLayout(buttonLayout);
+
+    readSearchDetailsTabs = new QTabWidget(readSearchTab);
+
+    readSearchFindingsLog =
+        new QTextEdit(readSearchDetailsTabs);
+    readSearchFindingsLog->setReadOnly(true);
+    readSearchFindingsLog->append(
+        QStringLiteral(
+            "[GUI] Structured READ/SEARCH findings will appear here."
+        )
+    );
+
+    readSearchDetailsTabs->addTab(
+        readSearchFindingsLog,
+        QStringLiteral("Findings")
+    );
+
+    readSearchOutputLog =
+        new QTextEdit(readSearchDetailsTabs);
+    readSearchOutputLog->setReadOnly(true);
+    readSearchOutputLog->append(
+        QStringLiteral("[GUI] READ/SEARCH panel ready.")
+    );
+    readSearchOutputLog->append(
+        QStringLiteral(
+            "[GUI] Select READ or SEARCH and provide a target file."
+        )
+    );
+
+    readSearchDetailsTabs->addTab(
+        readSearchOutputLog,
+        QStringLiteral("Raw Output")
+    );
+
+    mainLayout->addWidget(readSearchDetailsTabs, 3);
+
+    const auto updateOperationControls = [
+        this,
+        runButton
+    ]() {
+        const bool searchMode =
+            readSearchOperationCombo->currentData().toString() ==
+            QStringLiteral("SEARCH");
+
+        readSearchModeStack->setCurrentIndex(searchMode ? 1 : 0);
+
+        QWidget *currentPage =
+            readSearchModeStack->currentWidget();
+
+        if (currentPage != nullptr) {
+            currentPage->adjustSize();
+
+            const int preferredHeight =
+                currentPage->sizeHint().height();
+
+            readSearchModeStack->setFixedHeight(
+                preferredHeight
+            );
+        }
+
+        runButton->setText(
+            searchMode
+                ? QStringLiteral("Run SEARCH")
+                : QStringLiteral("Run READ")
+        );
+    };
+
+    const auto updatePatternControls = [
+        this,
+        singlePatternRow,
+        patternFileRow
+    ]() {
+        const bool patternFileMode =
+            searchPatternSourceCombo->currentData().toString() ==
+            QStringLiteral("file");
+
+        singlePatternRow->setVisible(!patternFileMode);
+        patternFileRow->setVisible(patternFileMode);
+
+        if (patternFileMode) {
+            searchPatternValue->clear();
+        } else {
+            searchPatternsFilePath->clear();
+        }
+
+        QWidget *currentPage =
+            readSearchModeStack->currentWidget();
+
+        if (currentPage != nullptr) {
+            currentPage->adjustSize();
+            readSearchModeStack->setFixedHeight(
+                currentPage->sizeHint().height()
+            );
+        }
+    };
+
+    connect(
+        readSearchOperationCombo,
+        QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this,
+        [updateOperationControls](int) {
+            updateOperationControls();
+        }
+    );
+
+    connect(
+        searchPatternSourceCombo,
+        QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this,
+        [updatePatternControls](int) {
+            updatePatternControls();
+        }
+    );
+
+    connect(
+        targetBrowseButton,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            const QString path = QFileDialog::getOpenFileName(
+                this,
+                QStringLiteral("Select READ/SEARCH Target")
+            );
+
+            if (!path.isEmpty()) {
+                readSearchTargetPath->setText(path);
+            }
+        }
+    );
+
+    connect(
+        searchPatternsBrowseButton,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            const QString path = QFileDialog::getOpenFileName(
+                this,
+                QStringLiteral("Select SEARCH Pattern File"),
+                QString(),
+                QStringLiteral("Text files (*.txt);;All files (*)")
+            );
+
+            if (!path.isEmpty()) {
+                searchPatternsFilePath->setText(path);
+            }
+        }
+    );
+
+    connect(
+        runButton,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::runReadSearchCommand
+    );
+
+    connect(
+        readSearchTargetPath,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::runReadSearchCommand
+    );
+
+    connect(
+        searchPatternValue,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::runReadSearchCommand
+    );
+
+    connect(
+        clearButton,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            readSearchDetailsTabs->setCurrentIndex(0);
+
+            readSearchFindingsLog->clear();
+            readSearchOutputLog->clear();
+
+            readSearchFindingsLog->append(
+                QStringLiteral(
+                    "[GUI] Structured READ/SEARCH findings "
+                    "will appear here."
+                )
+            );
+
+            readSearchOutputLog->append(
+                QStringLiteral(
+                    "[GUI] READ/SEARCH panel ready."
+                )
+            );
+            readSearchOutputLog->append(
+                QStringLiteral(
+                    "[GUI] Select READ or SEARCH and provide "
+                    "a target file."
+                )
+            );
+        }
+    );
+
+    updateOperationControls();
+    updatePatternControls();
 }
 
 
@@ -6473,6 +7009,828 @@ void MainWindow::runElfInfoCommand()
         appendStyledLine(
             elfInfoOutputLog,
             "[RESULT] Failed to start ELFINFO process.",
+            "#b00020",
+            true
+        );
+
+        delete combinedOutput;
+        process->deleteLater();
+    }
+}
+
+
+\
+void MainWindow::runReadSearchCommand()
+{
+    const bool searchMode =
+        readSearchOperationCombo->currentData().toString() ==
+        QStringLiteral("SEARCH");
+
+    const QString operation = searchMode
+        ? QStringLiteral("SEARCH")
+        : QStringLiteral("READ");
+
+    readSearchDetailsTabs->setCurrentWidget(
+        readSearchOutputLog
+    );
+
+    readSearchFindingsLog->clear();
+    readSearchOutputLog->clear();
+
+    readSearchFindingsLog->append(
+        QStringLiteral("[GUI] ") +
+        operation +
+        QStringLiteral(" operation in progress...")
+    );
+
+    const QString target =
+        readSearchTargetPath->text().trimmed();
+
+    if (target.isEmpty()) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("K1Wi READ/SEARCH"),
+            QStringLiteral("Please select a target file.")
+        );
+
+        readSearchFindingsLog->setPlainText(
+            operation +
+            QStringLiteral(
+                " Findings\n\n"
+                "Result\n"
+                "Operation was not started because no target "
+                "file was selected."
+            )
+        );
+
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] ") +
+            operation +
+            QStringLiteral(
+                " cancelled: no target file selected."
+            )
+        );
+        return;
+    }
+
+    const QFileInfo targetInfo(target);
+
+    if (!targetInfo.exists() || !targetInfo.isFile()) {
+        QMessageBox::warning(
+            this,
+            QStringLiteral("K1Wi READ/SEARCH"),
+            QStringLiteral(
+                "The selected target does not exist or is not "
+                "a regular file."
+            )
+        );
+
+        readSearchFindingsLog->setPlainText(
+            operation +
+            QStringLiteral(
+                " Findings\n\n"
+                "Result\n"
+                "Operation was not started because the target "
+                "file is invalid."
+            )
+        );
+
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] ") +
+            operation +
+            QStringLiteral(
+                " cancelled: invalid target file."
+            )
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Target: ") + target
+        );
+        return;
+    }
+
+    const QFileInfo cliInfo(resolveK1wiBinary());
+
+    if (!cliInfo.exists() ||
+        !cliInfo.isFile() ||
+        !cliInfo.isExecutable()) {
+        QMessageBox::critical(
+            this,
+            QStringLiteral("K1Wi READ/SEARCH"),
+            QStringLiteral(
+                "K1Wi CLI binary was not found or is not executable.\n\n"
+                "Build the CLI first from the project root."
+            )
+        );
+
+        readSearchFindingsLog->setPlainText(
+            operation +
+            QStringLiteral(
+                " Findings\n\n"
+                "Result\n"
+                "Operation was not started because the K1Wi CLI "
+                "binary is unavailable."
+            )
+        );
+
+        readSearchOutputLog->append(
+            QStringLiteral(
+                "[GUI] Operation cancelled: K1Wi CLI binary "
+                "is unavailable."
+            )
+        );
+        return;
+    }
+
+    QStringList arguments;
+    arguments << operation;
+    arguments << targetInfo.absoluteFilePath();
+
+    QString patternSourceLabel;
+    QString interpretationLabel;
+    QString patternDescription;
+    QString asciiBefore;
+    QString asciiAfter;
+    QString hexBefore;
+    QString hexAfter;
+    bool flagOnly = false;
+
+    const auto validDecimal = [](const QString &value) {
+        if (value.isEmpty()) {
+            return true;
+        }
+
+        bool ok = false;
+        value.toULongLong(&ok, 10);
+        return ok;
+    };
+
+    const auto validHexNumber = [](const QString &value) {
+        if (value.isEmpty()) {
+            return true;
+        }
+
+        bool ok = false;
+        value.toULongLong(&ok, 16);
+        return ok;
+    };
+
+    if (searchMode) {
+        const bool patternFileMode =
+            searchPatternSourceCombo->currentData().toString() ==
+            QStringLiteral("file");
+
+        const bool hexadecimalMode =
+            searchInterpretationCombo->currentData().toString() ==
+            QStringLiteral("--hex");
+
+        patternSourceLabel = patternFileMode
+            ? QStringLiteral("Pattern file")
+            : QStringLiteral("Single pattern");
+
+        interpretationLabel = hexadecimalMode
+            ? QStringLiteral("Hexadecimal bytes")
+            : QStringLiteral("ASCII text");
+
+        if (patternFileMode) {
+            const QString patternFile =
+                searchPatternsFilePath->text().trimmed();
+
+            const QFileInfo patternFileInfo(patternFile);
+
+            if (patternFile.isEmpty() ||
+                !patternFileInfo.exists() ||
+                !patternFileInfo.isFile()) {
+                QMessageBox::warning(
+                    this,
+                    QStringLiteral("K1Wi SEARCH"),
+                    QStringLiteral(
+                        "Please select a valid pattern file."
+                    )
+                );
+
+                readSearchFindingsLog->setPlainText(
+                    QStringLiteral(
+                        "SEARCH Findings\n\n"
+                        "Result\n"
+                        "SEARCH was not started because the "
+                        "pattern file is invalid."
+                    )
+                );
+
+                readSearchOutputLog->append(
+                    QStringLiteral(
+                        "[GUI] SEARCH cancelled: invalid pattern file."
+                    )
+                );
+                return;
+            }
+
+            arguments << QStringLiteral("--patterns");
+            arguments << patternFileInfo.absoluteFilePath();
+
+            patternDescription =
+                patternFileInfo.absoluteFilePath();
+        } else {
+            const QString pattern =
+                searchPatternValue->text();
+
+            QString cliPattern = pattern;
+
+            if (pattern.isEmpty()) {
+                QMessageBox::warning(
+                    this,
+                    QStringLiteral("K1Wi SEARCH"),
+                    QStringLiteral(
+                        "Please enter a search pattern."
+                    )
+                );
+
+                readSearchFindingsLog->setPlainText(
+                    QStringLiteral(
+                        "SEARCH Findings\n\n"
+                        "Result\n"
+                        "SEARCH was not started because no "
+                        "pattern was provided."
+                    )
+                );
+
+                readSearchOutputLog->append(
+                    QStringLiteral(
+                        "[GUI] SEARCH cancelled: missing pattern."
+                    )
+                );
+                return;
+            }
+
+            if (hexadecimalMode) {
+                QString normalized = pattern;
+                normalized.remove(
+                    QRegularExpression(
+                        QStringLiteral(R"([\s:_-])")
+                    )
+                );
+
+                const QRegularExpression hexPattern(
+                    QStringLiteral(R"(^[0-9A-Fa-f]+$)")
+                );
+
+                if (!hexPattern.match(normalized).hasMatch() ||
+                    normalized.size() % 2 != 0) {
+                    QMessageBox::warning(
+                        this,
+                        QStringLiteral("K1Wi SEARCH"),
+                        QStringLiteral(
+                            "Hexadecimal patterns must contain an "
+                            "even number of hexadecimal digits.\n\n"
+                            "Spaces, colons, underscores, and hyphens "
+                            "may be used as separators."
+                        )
+                    );
+
+                    readSearchFindingsLog->setPlainText(
+                        QStringLiteral(
+                            "SEARCH Findings\n\n"
+                            "Result\n"
+                            "SEARCH was not started because the "
+                            "hexadecimal pattern is invalid."
+                        )
+                    );
+
+                    readSearchOutputLog->append(
+                        QStringLiteral(
+                            "[GUI] SEARCH cancelled: invalid "
+                            "hexadecimal pattern."
+                        )
+                    );
+                    return;
+                }
+
+                cliPattern = normalized;
+            }
+
+            arguments << cliPattern;
+            patternDescription = pattern;
+        }
+
+        arguments << (
+            hexadecimalMode
+                ? QStringLiteral("--hex")
+                : QStringLiteral("--ascii")
+        );
+
+        asciiBefore =
+            searchBeforeValue->text().trimmed();
+        asciiAfter =
+            searchAfterValue->text().trimmed();
+        hexBefore =
+            searchBeforeHexValue->text().trimmed();
+        hexAfter =
+            searchAfterHexValue->text().trimmed();
+
+        if (!validDecimal(asciiBefore) ||
+            !validDecimal(asciiAfter)) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi SEARCH"),
+                QStringLiteral(
+                    "ASCII context values must be non-negative "
+                    "decimal numbers."
+                )
+            );
+
+            readSearchOutputLog->append(
+                QStringLiteral(
+                    "[GUI] SEARCH cancelled: invalid ASCII "
+                    "context value."
+                )
+            );
+            return;
+        }
+
+        if (!validHexNumber(hexBefore) ||
+            !validHexNumber(hexAfter)) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi SEARCH"),
+                QStringLiteral(
+                    "Hex context values must contain valid "
+                    "hexadecimal digits."
+                )
+            );
+
+            readSearchOutputLog->append(
+                QStringLiteral(
+                    "[GUI] SEARCH cancelled: invalid hexadecimal "
+                    "context value."
+                )
+            );
+            return;
+        }
+
+        if (!asciiBefore.isEmpty() &&
+            asciiBefore != QStringLiteral("0")) {
+            arguments << QStringLiteral("--before");
+            arguments << asciiBefore;
+        }
+
+        if (!asciiAfter.isEmpty() &&
+            asciiAfter != QStringLiteral("0")) {
+            arguments << QStringLiteral("--after");
+            arguments << asciiAfter;
+        }
+
+        if (!hexBefore.isEmpty() &&
+            hexBefore != QStringLiteral("0")) {
+            arguments << QStringLiteral("--before-hex");
+            arguments << hexBefore;
+        }
+
+        if (!hexAfter.isEmpty() &&
+            hexAfter != QStringLiteral("0")) {
+            arguments << QStringLiteral("--after-hex");
+            arguments << hexAfter;
+        }
+
+        flagOnly = searchFlagOnlyCheck->isChecked();
+
+        if (flagOnly) {
+            arguments << QStringLiteral("--flag");
+        }
+    }
+
+    readSearchOutputLog->append(
+        QStringLiteral("[GUI] ") +
+        operation +
+        QStringLiteral(" run summary")
+    );
+    readSearchOutputLog->append(
+        QStringLiteral("[GUI] Target: ") +
+        targetInfo.absoluteFilePath()
+    );
+    readSearchOutputLog->append(
+        QStringLiteral("[GUI] File size: ") +
+        QString::number(targetInfo.size()) +
+        QStringLiteral(" bytes")
+    );
+
+    if (searchMode) {
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Pattern source: ") +
+            patternSourceLabel
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Interpretation: ") +
+            interpretationLabel
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Pattern: ") +
+            patternDescription
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] ASCII context before: ") +
+            (
+                asciiBefore.isEmpty()
+                    ? QStringLiteral("0")
+                    : asciiBefore
+            )
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] ASCII context after: ") +
+            (
+                asciiAfter.isEmpty()
+                    ? QStringLiteral("0")
+                    : asciiAfter
+            )
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Hex context before: ") +
+            (
+                hexBefore.isEmpty()
+                    ? QStringLiteral("0")
+                    : hexBefore
+            )
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Hex context after: ") +
+            (
+                hexAfter.isEmpty()
+                    ? QStringLiteral("0")
+                    : hexAfter
+            )
+        );
+        readSearchOutputLog->append(
+            QStringLiteral("[GUI] Flag-only mode: ") +
+            (
+                flagOnly
+                    ? QStringLiteral("Enabled")
+                    : QStringLiteral("Disabled")
+            )
+        );
+    }
+
+    readSearchOutputLog->append(QString());
+    readSearchOutputLog->append(
+        QStringLiteral("Running: ") +
+        cliInfo.absoluteFilePath() +
+        QStringLiteral(" ") +
+        arguments.join(QStringLiteral(" "))
+    );
+    readSearchOutputLog->append(QString());
+
+    QProcess *process = new QProcess(this);
+    QString *combinedOutput = new QString();
+
+    connect(
+        process,
+        &QProcess::readyReadStandardOutput,
+        this,
+        [this, process, combinedOutput]() {
+            const QString output = stripAnsiCodes(
+                QString::fromLocal8Bit(
+                    process->readAllStandardOutput()
+                )
+            );
+
+            combinedOutput->append(output);
+            readSearchOutputLog->moveCursor(QTextCursor::End);
+            readSearchOutputLog->insertPlainText(output);
+        }
+    );
+
+    connect(
+        process,
+        &QProcess::readyReadStandardError,
+        this,
+        [this, process, combinedOutput]() {
+            const QString output = stripAnsiCodes(
+                QString::fromLocal8Bit(
+                    process->readAllStandardError()
+                )
+            );
+
+            combinedOutput->append(output);
+            readSearchOutputLog->moveCursor(QTextCursor::End);
+            readSearchOutputLog->insertPlainText(output);
+        }
+    );
+
+    connect(
+        process,
+        QOverload<int, QProcess::ExitStatus>::of(
+            &QProcess::finished
+        ),
+        this,
+        [
+            this,
+            process,
+            combinedOutput,
+            targetInfo,
+            operation,
+            searchMode,
+            patternSourceLabel,
+            interpretationLabel,
+            patternDescription,
+            asciiBefore,
+            asciiAfter,
+            hexBefore,
+            hexAfter,
+            flagOnly
+        ](
+            int exitCode,
+            QProcess::ExitStatus exitStatus
+        ) {
+            readSearchOutputLog->append(QString());
+
+            if (exitStatus == QProcess::NormalExit) {
+                const QString output = *combinedOutput;
+
+                const bool outputReportsNoMatches =
+                    searchMode &&
+                    output.contains(
+                        QStringLiteral("No matches found."),
+                        Qt::CaseInsensitive
+                    );
+
+                const QRegularExpression failureExpression(
+                    QStringLiteral(
+                        R"((?im)^\s*(?:\[-\]|error:|failed:).*(?:failed|error|invalid|cannot|unable|missing|unknown))"
+                    )
+                );
+
+                const bool outputReportsError =
+                    output.contains(
+                        QStringLiteral("Unknown flag:"),
+                        Qt::CaseInsensitive
+                    ) ||
+                    output.contains(
+                        QStringLiteral("Missing file"),
+                        Qt::CaseInsensitive
+                    ) ||
+                    output.contains(
+                        QStringLiteral("Missing pattern"),
+                        Qt::CaseInsensitive
+                    ) ||
+                    output.contains(
+                        QStringLiteral("Unexpected extra argument"),
+                        Qt::CaseInsensitive
+                    ) ||
+                    failureExpression.match(output).hasMatch();
+
+                QString findings;
+
+                findings += operation +
+                            QStringLiteral(" Findings") +
+                            QChar(10);
+                findings += QChar(10);
+
+                findings += QStringLiteral("Target") + QChar(10);
+                findings += QStringLiteral("File: ") +
+                            targetInfo.absoluteFilePath() +
+                            QChar(10);
+                findings += QStringLiteral("File size: ") +
+                            QString::number(targetInfo.size()) +
+                            QStringLiteral(" bytes") +
+                            QChar(10);
+
+                if (searchMode) {
+                    findings += QChar(10);
+                    findings += QStringLiteral("Search Configuration") +
+                                QChar(10);
+                    findings += QStringLiteral("Pattern source: ") +
+                                patternSourceLabel +
+                                QChar(10);
+                    findings += QStringLiteral("Interpretation: ") +
+                                interpretationLabel +
+                                QChar(10);
+                    findings += QStringLiteral("Pattern: ") +
+                                patternDescription +
+                                QChar(10);
+                    findings += QStringLiteral(
+                        "ASCII context before: "
+                    ) +
+                    (
+                        asciiBefore.isEmpty()
+                            ? QStringLiteral("0")
+                            : asciiBefore
+                    ) +
+                    QChar(10);
+                    findings += QStringLiteral(
+                        "ASCII context after: "
+                    ) +
+                    (
+                        asciiAfter.isEmpty()
+                            ? QStringLiteral("0")
+                            : asciiAfter
+                    ) +
+                    QChar(10);
+                    findings += QStringLiteral(
+                        "Hex context before: "
+                    ) +
+                    (
+                        hexBefore.isEmpty()
+                            ? QStringLiteral("0")
+                            : hexBefore
+                    ) +
+                    QChar(10);
+                    findings += QStringLiteral(
+                        "Hex context after: "
+                    ) +
+                    (
+                        hexAfter.isEmpty()
+                            ? QStringLiteral("0")
+                            : hexAfter
+                    ) +
+                    QChar(10);
+                    findings += QStringLiteral("Flag-only mode: ") +
+                                (
+                                    flagOnly
+                                        ? QStringLiteral("Enabled")
+                                        : QStringLiteral("Disabled")
+                                ) +
+                                QChar(10);
+
+                    const QRegularExpression offsetExpression(
+                        QStringLiteral(
+                            R"((?:offset|Offset|OFFSET)[^0-9A-Fa-f]*(0x[0-9A-Fa-f]+|[0-9]+))"
+                        )
+                    );
+
+                    QRegularExpressionMatchIterator iterator =
+                        offsetExpression.globalMatch(output);
+
+                    QStringList offsets;
+
+                    while (iterator.hasNext()) {
+                        const QString offset =
+                            iterator.next().captured(1);
+
+                        if (!offsets.contains(offset)) {
+                            offsets.append(offset);
+                        }
+                    }
+
+                    findings += QChar(10);
+                    findings += QStringLiteral("Matches") +
+                                QChar(10);
+
+                    if (outputReportsNoMatches) {
+                        findings += QStringLiteral(
+                            "No matches reported."
+                        ) + QChar(10);
+                    } else if (offsets.isEmpty()) {
+                        findings += QStringLiteral(
+                            "No match offsets were parsed from the output."
+                        ) + QChar(10);
+                    } else {
+                        findings += QStringLiteral(
+                            "Unique reported offsets: "
+                        ) +
+                        QString::number(offsets.size()) +
+                        QChar(10);
+
+                        for (const QString &offset : offsets) {
+                            findings += QStringLiteral("- ") +
+                                        offset +
+                                        QChar(10);
+                        }
+                    }
+                } else {
+                    findings += QChar(10);
+                    findings += QStringLiteral("Read Mode") +
+                                QChar(10);
+                    findings += QStringLiteral(
+                        "K1Wi standard raw file reader"
+                    ) + QChar(10);
+                    findings += QStringLiteral(
+                        "Hexadecimal display: Enabled"
+                    ) + QChar(10);
+                    findings += QStringLiteral(
+                        "Safe ASCII display: Enabled"
+                    ) + QChar(10);
+                }
+
+                findings += QChar(10);
+                findings += QStringLiteral("Result") + QChar(10);
+
+                if (exitCode == 0 &&
+                    !outputReportsError &&
+                    outputReportsNoMatches) {
+                    findings += QStringLiteral(
+                        "SEARCH completed with no matches."
+                    ) + QChar(10);
+                } else if (exitCode == 0 &&
+                           !outputReportsError) {
+                    findings += operation +
+                                QStringLiteral(
+                                    " completed successfully."
+                                ) +
+                                QChar(10);
+                } else {
+                    findings += operation +
+                                QStringLiteral(
+                                    " reported an error or failure."
+                                ) +
+                                QChar(10);
+                }
+
+                findings += QStringLiteral("Exit code: ") +
+                            QString::number(exitCode) +
+                            QChar(10);
+
+                readSearchFindingsLog->setPlainText(findings);
+
+                if (exitCode == 0 &&
+                    !outputReportsError &&
+                    outputReportsNoMatches) {
+                    appendStyledLine(
+                        readSearchOutputLog,
+                        QStringLiteral(
+                            "[RESULT] SEARCH completed with no matches."
+                        ),
+                        "#8a5a00",
+                        true
+                    );
+                } else if (exitCode == 0 &&
+                           !outputReportsError) {
+                    appendStyledLine(
+                        readSearchOutputLog,
+                        QStringLiteral("[RESULT] ") +
+                        operation +
+                        QStringLiteral(
+                            " completed successfully."
+                        ),
+                        "#0b7a0b",
+                        true
+                    );
+                } else {
+                    appendStyledLine(
+                        readSearchOutputLog,
+                        QStringLiteral("[RESULT] ") +
+                        operation +
+                        QStringLiteral(
+                            " reported an error or failure."
+                        ),
+                        "#b00020",
+                        true
+                    );
+                }
+
+                readSearchOutputLog->append(
+                    QStringLiteral(
+                        "Process finished with exit code %1"
+                    ).arg(exitCode)
+                );
+            } else {
+                readSearchFindingsLog->setPlainText(
+                    operation +
+                    QStringLiteral(
+                        " Findings\n\n"
+                        "Result\n"
+                        "The process crashed or was terminated."
+                    )
+                );
+
+                appendStyledLine(
+                    readSearchOutputLog,
+                    QStringLiteral("[RESULT] ") +
+                    operation +
+                    QStringLiteral(
+                        " process crashed or was terminated."
+                    ),
+                    "#b00020",
+                    true
+                );
+            }
+
+            readSearchDetailsTabs->setCurrentWidget(
+                readSearchFindingsLog
+            );
+
+            delete combinedOutput;
+            process->deleteLater();
+        }
+    );
+
+    process->start(
+        cliInfo.absoluteFilePath(),
+        arguments
+    );
+
+    if (!process->waitForStarted()) {
+        readSearchFindingsLog->setPlainText(
+            operation +
+            QStringLiteral(
+                " Findings\n\n"
+                "Result\n"
+                "Failed to start the K1Wi process."
+            )
+        );
+
+        appendStyledLine(
+            readSearchOutputLog,
+            QStringLiteral("[RESULT] Failed to start ") +
+            operation +
+            QStringLiteral(" process."),
             "#b00020",
             true
         );
