@@ -745,6 +745,7 @@ MainWindow::MainWindow(QWidget *parent)
     buildMagicTab();
     buildElfInfoTab();
     buildReadSearchTab();
+    buildRsaUtilitiesTab();
     buildEntropyTab();
     buildPcapTab();
     
@@ -758,6 +759,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabs->addTab(magicTab, "MAGIC");
     tabs->addTab(elfInfoTab, "ELFINFO");
     tabs->addTab(readSearchTab, "READ/SEARCH");
+    tabs->addTab(rsaUtilitiesTab, "RSA UTILITIES");
     tabs->addTab(entropyTab, "ENTROPY");
     tabs->addTab(pcapTab, "PCAP");
     
@@ -3291,6 +3293,347 @@ void MainWindow::buildReadSearchTab()
     updateOperationControls();
     updatePatternControls();
 }
+
+
+
+void MainWindow::buildRsaUtilitiesTab()
+{
+    rsaUtilitiesTab = new QWidget(this);
+
+    QVBoxLayout *mainLayout =
+        new QVBoxLayout(rsaUtilitiesTab);
+
+    QLabel *title = new QLabel(
+        QStringLiteral("K1Wi Framework - RSA Utilities"),
+        rsaUtilitiesTab
+    );
+    mainLayout->addWidget(title);
+
+    QLabel *description = new QLabel(
+        QStringLiteral(
+            "Validate RSA primes, compute private-key values, "
+            "decrypt with known factors, and test weak RSA keys."
+        ),
+        rsaUtilitiesTab
+    );
+    description->setWordWrap(true);
+    mainLayout->addWidget(description);
+
+    QHBoxLayout *utilityLayout = new QHBoxLayout();
+
+    rsaUtilityCombo = new QComboBox(rsaUtilitiesTab);
+
+    rsaUtilityCombo->addItem(
+        QStringLiteral("Check prime pair"),
+        QStringLiteral("RSA-CHECKPQ")
+    );
+
+    rsaUtilityCombo->addItem(
+        QStringLiteral("Compute private exponent"),
+        QStringLiteral("RSA-DFROMPQ")
+    );
+
+    rsaUtilityCombo->addItem(
+        QStringLiteral("Decrypt with known primes"),
+        QStringLiteral("RSA-KNOWNPQ")
+    );
+
+    rsaUtilityCombo->addItem(
+        QStringLiteral("Wiener small-d attack"),
+        QStringLiteral("RSA-WIENER")
+    );
+
+    rsaUtilityCombo->addItem(
+        QStringLiteral("Small public-exponent attack"),
+        QStringLiteral("RSA-SMALL-E")
+    );
+
+    utilityLayout->addWidget(
+        new QLabel(
+            QStringLiteral("RSA utility:"),
+            rsaUtilitiesTab
+        )
+    );
+
+    utilityLayout->addWidget(rsaUtilityCombo);
+    utilityLayout->addStretch();
+
+    mainLayout->addLayout(utilityLayout);
+
+    rsaUtilityInputStack =
+        new QStackedWidget(rsaUtilitiesTab);
+
+    QWidget *inputPage =
+        new QWidget(rsaUtilityInputStack);
+
+    QVBoxLayout *inputLayout =
+        new QVBoxLayout(inputPage);
+
+    inputLayout->setContentsMargins(0, 0, 0, 0);
+    inputLayout->setSpacing(8);
+
+    QWidget *fileRow = new QWidget(inputPage);
+    QHBoxLayout *fileLayout = new QHBoxLayout(fileRow);
+    fileLayout->setContentsMargins(0, 0, 0, 0);
+
+    QLabel *fileLabel = new QLabel(
+        QStringLiteral("RSA file:"),
+        fileRow
+    );
+
+    rsaUtilityFilePath = new QLineEdit(fileRow);
+    rsaUtilityFilePath->setPlaceholderText(
+        QStringLiteral("Select an RSA parameter file")
+    );
+
+    rsaUtilityBrowseButton = new QPushButton(
+        QStringLiteral("Browse"),
+        fileRow
+    );
+
+    fileLayout->addWidget(fileLabel);
+    fileLayout->addWidget(rsaUtilityFilePath);
+    fileLayout->addWidget(rsaUtilityBrowseButton);
+
+    inputLayout->addWidget(fileRow);
+
+    QWidget *primeRow = new QWidget(inputPage);
+    QHBoxLayout *primeLayout =
+        new QHBoxLayout(primeRow);
+    primeLayout->setContentsMargins(0, 0, 0, 0);
+
+    QLabel *pLabel = new QLabel(
+        QStringLiteral("p:"),
+        primeRow
+    );
+
+    rsaUtilityPValue = new QLineEdit(primeRow);
+    rsaUtilityPValue->setPlaceholderText(
+        QStringLiteral("Prime p")
+    );
+
+    QLabel *qLabel = new QLabel(
+        QStringLiteral("q:"),
+        primeRow
+    );
+
+    rsaUtilityQValue = new QLineEdit(primeRow);
+    rsaUtilityQValue->setPlaceholderText(
+        QStringLiteral("Prime q")
+    );
+
+    primeLayout->addWidget(pLabel);
+    primeLayout->addWidget(rsaUtilityPValue);
+    primeLayout->addSpacing(12);
+    primeLayout->addWidget(qLabel);
+    primeLayout->addWidget(rsaUtilityQValue);
+
+    inputLayout->addWidget(primeRow);
+
+    QWidget *exponentRow = new QWidget(inputPage);
+    QHBoxLayout *exponentLayout =
+        new QHBoxLayout(exponentRow);
+    exponentLayout->setContentsMargins(0, 0, 0, 0);
+
+    QLabel *eLabel = new QLabel(
+        QStringLiteral("Public exponent e:"),
+        exponentRow
+    );
+
+    rsaUtilityEValue = new QLineEdit(exponentRow);
+    rsaUtilityEValue->setPlaceholderText(
+        QStringLiteral("Public exponent e")
+    );
+
+    exponentLayout->addWidget(eLabel);
+    exponentLayout->addWidget(rsaUtilityEValue);
+
+    inputLayout->addWidget(exponentRow);
+
+    rsaUtilityInputStack->addWidget(inputPage);
+    mainLayout->addWidget(rsaUtilityInputStack);
+
+    QPushButton *runButton = new QPushButton(
+        QStringLiteral("Run RSA-CHECKPQ"),
+        rsaUtilitiesTab
+    );
+
+    QPushButton *clearButton = new QPushButton(
+        QStringLiteral("Clear Results"),
+        rsaUtilitiesTab
+    );
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(runButton);
+    buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
+
+    mainLayout->addLayout(buttonLayout);
+
+    rsaUtilitiesDetailsTabs =
+        new QTabWidget(rsaUtilitiesTab);
+
+    rsaUtilitiesFindingsLog =
+        new QTextEdit(rsaUtilitiesDetailsTabs);
+    rsaUtilitiesFindingsLog->setReadOnly(true);
+    rsaUtilitiesFindingsLog->setPlainText(
+        QStringLiteral(
+            "[GUI] Structured RSA findings will appear here."
+        )
+    );
+
+    rsaUtilitiesDetailsTabs->addTab(
+        rsaUtilitiesFindingsLog,
+        QStringLiteral("Findings")
+    );
+
+    rsaUtilitiesOutputLog =
+        new QTextEdit(rsaUtilitiesDetailsTabs);
+    rsaUtilitiesOutputLog->setReadOnly(true);
+    rsaUtilitiesOutputLog->setPlainText(
+        QStringLiteral("[GUI] RSA Utilities panel ready.")
+    );
+
+    rsaUtilitiesDetailsTabs->addTab(
+        rsaUtilitiesOutputLog,
+        QStringLiteral("Raw Output")
+    );
+
+    mainLayout->addWidget(rsaUtilitiesDetailsTabs, 1);
+
+    const auto updateUtilityControls = [
+        this,
+        runButton,
+        fileRow,
+        primeRow,
+        exponentRow
+    ]() {
+        const QString command =
+            rsaUtilityCombo->currentData().toString();
+
+        const bool needsFile =
+            command == QStringLiteral("RSA-KNOWNPQ") ||
+            command == QStringLiteral("RSA-WIENER") ||
+            command == QStringLiteral("RSA-SMALL-E");
+
+        const bool needsPrimes =
+            command == QStringLiteral("RSA-CHECKPQ") ||
+            command == QStringLiteral("RSA-DFROMPQ") ||
+            command == QStringLiteral("RSA-KNOWNPQ");
+
+        const bool needsExponent =
+            command == QStringLiteral("RSA-DFROMPQ");
+
+        fileRow->setVisible(needsFile);
+        primeRow->setVisible(needsPrimes);
+        exponentRow->setVisible(needsExponent);
+
+        runButton->setText(
+            QStringLiteral("Run ") + command
+        );
+
+        rsaUtilityInputStack->adjustSize();
+        rsaUtilityInputStack->setFixedHeight(
+            rsaUtilityInputStack->currentWidget()
+                ->sizeHint()
+                .height()
+        );
+    };
+
+    connect(
+        rsaUtilityCombo,
+        QOverload<int>::of(
+            &QComboBox::currentIndexChanged
+        ),
+        this,
+        [updateUtilityControls](int) {
+            updateUtilityControls();
+        }
+    );
+
+    connect(
+        rsaUtilityBrowseButton,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            const QString path =
+                QFileDialog::getOpenFileName(
+                    this,
+                    QStringLiteral(
+                        "Select RSA Parameter File"
+                    ),
+                    QString(),
+                    QStringLiteral(
+                        "Text files (*.txt);;All files (*)"
+                    )
+                );
+
+            if (!path.isEmpty()) {
+                rsaUtilityFilePath->setText(path);
+            }
+        }
+    );
+
+    connect(
+        runButton,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::runRsaUtilitiesCommand
+    );
+
+    connect(
+        rsaUtilityFilePath,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::runRsaUtilitiesCommand
+    );
+
+    connect(
+        rsaUtilityPValue,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::runRsaUtilitiesCommand
+    );
+
+    connect(
+        rsaUtilityQValue,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::runRsaUtilitiesCommand
+    );
+
+    connect(
+        rsaUtilityEValue,
+        &QLineEdit::returnPressed,
+        this,
+        &MainWindow::runRsaUtilitiesCommand
+    );
+
+    connect(
+        clearButton,
+        &QPushButton::clicked,
+        this,
+        [this]() {
+            rsaUtilitiesDetailsTabs->setCurrentIndex(0);
+
+            rsaUtilitiesFindingsLog->setPlainText(
+                QStringLiteral(
+                    "[GUI] Structured RSA findings "
+                    "will appear here."
+                )
+            );
+
+            rsaUtilitiesOutputLog->setPlainText(
+                QStringLiteral(
+                    "[GUI] RSA Utilities panel ready."
+                )
+            );
+        }
+    );
+
+    updateUtilityControls();
+}
+
 
 
 void MainWindow::buildEntropyTab()
@@ -7839,6 +8182,357 @@ void MainWindow::runReadSearchCommand()
         process->deleteLater();
     }
 }
+
+
+
+void MainWindow::runRsaUtilitiesCommand()
+{
+    const QString command =
+        rsaUtilityCombo->currentData().toString();
+
+    rsaUtilitiesDetailsTabs->setCurrentWidget(
+        rsaUtilitiesOutputLog
+    );
+
+    rsaUtilitiesFindingsLog->clear();
+    rsaUtilitiesOutputLog->clear();
+
+    const QFileInfo cliInfo(resolveK1wiBinary());
+
+    if (!cliInfo.exists() ||
+        !cliInfo.isFile() ||
+        !cliInfo.isExecutable()) {
+        QMessageBox::critical(
+            this,
+            QStringLiteral("K1Wi RSA Utilities"),
+            QStringLiteral(
+                "K1Wi CLI binary was not found or is not "
+                "executable."
+            )
+        );
+        return;
+    }
+
+    const auto validDecimalInteger =
+        [](const QString &value) {
+            const QRegularExpression expression(
+                QStringLiteral(R"(^[0-9]+$)")
+            );
+            return expression.match(value).hasMatch();
+        };
+
+    QStringList arguments;
+    arguments << command;
+
+    QString p = rsaUtilityPValue->text().trimmed();
+    QString q = rsaUtilityQValue->text().trimmed();
+    QString e = rsaUtilityEValue->text().trimmed();
+    QString filePath =
+        rsaUtilityFilePath->text().trimmed();
+
+    if (command == QStringLiteral("RSA-CHECKPQ")) {
+        if (!validDecimalInteger(p) ||
+            !validDecimalInteger(q)) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi RSA Utilities"),
+                QStringLiteral(
+                    "Enter valid non-negative decimal integers "
+                    "for p and q."
+                )
+            );
+            return;
+        }
+
+        arguments << p << q;
+    } else if (
+        command == QStringLiteral("RSA-DFROMPQ")
+    ) {
+        if (!validDecimalInteger(p) ||
+            !validDecimalInteger(q) ||
+            !validDecimalInteger(e)) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi RSA Utilities"),
+                QStringLiteral(
+                    "Enter valid non-negative decimal integers "
+                    "for p, q, and e."
+                )
+            );
+            return;
+        }
+
+        arguments << p << q << e;
+    } else if (
+        command == QStringLiteral("RSA-KNOWNPQ")
+    ) {
+        const QFileInfo rsaFileInfo(filePath);
+
+        if (!rsaFileInfo.exists() ||
+            !rsaFileInfo.isFile()) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi RSA Utilities"),
+                QStringLiteral(
+                    "Select a valid RSA parameter file."
+                )
+            );
+            return;
+        }
+
+        if (!validDecimalInteger(p) ||
+            !validDecimalInteger(q)) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi RSA Utilities"),
+                QStringLiteral(
+                    "Enter valid non-negative decimal integers "
+                    "for p and q."
+                )
+            );
+            return;
+        }
+
+        arguments
+            << rsaFileInfo.absoluteFilePath()
+            << p
+            << q;
+    } else {
+        const QFileInfo rsaFileInfo(filePath);
+
+        if (!rsaFileInfo.exists() ||
+            !rsaFileInfo.isFile()) {
+            QMessageBox::warning(
+                this,
+                QStringLiteral("K1Wi RSA Utilities"),
+                QStringLiteral(
+                    "Select a valid RSA parameter file."
+                )
+            );
+            return;
+        }
+
+        arguments << rsaFileInfo.absoluteFilePath();
+    }
+
+    rsaUtilitiesOutputLog->append(
+        QStringLiteral("[GUI] RSA utility: ") + command
+    );
+
+    const bool commandUsesFile =
+        command == QStringLiteral("RSA-KNOWNPQ") ||
+        command == QStringLiteral("RSA-WIENER") ||
+        command == QStringLiteral("RSA-SMALL-E");
+
+    const bool commandUsesPrimes =
+        command == QStringLiteral("RSA-CHECKPQ") ||
+        command == QStringLiteral("RSA-DFROMPQ") ||
+        command == QStringLiteral("RSA-KNOWNPQ");
+
+    const bool commandUsesExponent =
+        command == QStringLiteral("RSA-DFROMPQ");
+
+    if (commandUsesFile && !filePath.isEmpty()) {
+        rsaUtilitiesOutputLog->append(
+            QStringLiteral("[GUI] RSA file: ") + filePath
+        );
+    }
+
+    if (commandUsesPrimes && !p.isEmpty()) {
+        rsaUtilitiesOutputLog->append(
+            QStringLiteral("[GUI] p: ") + p
+        );
+    }
+
+    if (commandUsesPrimes && !q.isEmpty()) {
+        rsaUtilitiesOutputLog->append(
+            QStringLiteral("[GUI] q: ") + q
+        );
+    }
+
+    if (commandUsesExponent && !e.isEmpty()) {
+        rsaUtilitiesOutputLog->append(
+            QStringLiteral("[GUI] e: ") + e
+        );
+    }
+
+    rsaUtilitiesOutputLog->append(QString());
+    rsaUtilitiesOutputLog->append(
+        QStringLiteral("Running: ") +
+        cliInfo.absoluteFilePath() +
+        QStringLiteral(" ") +
+        arguments.join(QStringLiteral(" "))
+    );
+    rsaUtilitiesOutputLog->append(QString());
+
+    QProcess *process = new QProcess(this);
+    QString *combinedOutput = new QString();
+
+    connect(
+        process,
+        &QProcess::readyReadStandardOutput,
+        this,
+        [this, process, combinedOutput]() {
+            const QString output = stripAnsiCodes(
+                QString::fromLocal8Bit(
+                    process->readAllStandardOutput()
+                )
+            );
+
+            combinedOutput->append(output);
+            rsaUtilitiesOutputLog->moveCursor(
+                QTextCursor::End
+            );
+            rsaUtilitiesOutputLog->insertPlainText(output);
+        }
+    );
+
+    connect(
+        process,
+        &QProcess::readyReadStandardError,
+        this,
+        [this, process, combinedOutput]() {
+            const QString output = stripAnsiCodes(
+                QString::fromLocal8Bit(
+                    process->readAllStandardError()
+                )
+            );
+
+            combinedOutput->append(output);
+            rsaUtilitiesOutputLog->moveCursor(
+                QTextCursor::End
+            );
+            rsaUtilitiesOutputLog->insertPlainText(output);
+        }
+    );
+
+    connect(
+        process,
+        QOverload<int, QProcess::ExitStatus>::of(
+            &QProcess::finished
+        ),
+        this,
+        [
+            this,
+            process,
+            combinedOutput,
+            command
+        ](
+            int exitCode,
+            QProcess::ExitStatus exitStatus
+        ) {
+            QString findings;
+
+            findings += QStringLiteral("RSA Utilities Findings");
+            findings += QChar(10);
+            findings += QChar(10);
+            findings += QStringLiteral("Utility");
+            findings += QChar(10);
+            findings += command;
+            findings += QChar(10);
+            findings += QChar(10);
+            findings += QStringLiteral("Result");
+            findings += QChar(10);
+
+            if (exitStatus == QProcess::NormalExit &&
+                exitCode == 0) {
+                findings += QStringLiteral(
+                    "The RSA utility completed successfully."
+                );
+                findings += QChar(10);
+
+                appendStyledLine(
+                    rsaUtilitiesOutputLog,
+                    QStringLiteral("[RESULT] ") +
+                    command +
+                    QStringLiteral(
+                        " completed successfully."
+                    ),
+                    "#0b7a0b",
+                    true
+                );
+            } else if (
+                exitStatus == QProcess::NormalExit
+            ) {
+                findings += QStringLiteral(
+                    "The RSA utility completed without a "
+                    "successful recovery or validation."
+                );
+                findings += QChar(10);
+
+                appendStyledLine(
+                    rsaUtilitiesOutputLog,
+                    QStringLiteral("[RESULT] ") +
+                    command +
+                    QStringLiteral(
+                        " did not produce a successful result."
+                    ),
+                    "#8a5a00",
+                    true
+                );
+            } else {
+                findings += QStringLiteral(
+                    "The RSA utility process crashed or was "
+                    "terminated."
+                );
+                findings += QChar(10);
+
+                appendStyledLine(
+                    rsaUtilitiesOutputLog,
+                    QStringLiteral("[RESULT] ") +
+                    command +
+                    QStringLiteral(
+                        " process crashed or was terminated."
+                    ),
+                    "#b00020",
+                    true
+                );
+            }
+
+            findings += QStringLiteral("Exit code: ");
+            findings += QString::number(exitCode);
+            findings += QChar(10);
+            findings += QChar(10);
+            findings += QStringLiteral(
+                "Complete CLI output is preserved in Raw Output."
+            );
+
+            rsaUtilitiesFindingsLog->setPlainText(findings);
+
+            rsaUtilitiesOutputLog->append(
+                QStringLiteral(
+                    "Process finished with exit code %1"
+                ).arg(exitCode)
+            );
+
+            rsaUtilitiesDetailsTabs->setCurrentWidget(
+                rsaUtilitiesFindingsLog
+            );
+
+            delete combinedOutput;
+            process->deleteLater();
+        }
+    );
+
+    process->start(
+        cliInfo.absoluteFilePath(),
+        arguments
+    );
+
+    if (!process->waitForStarted()) {
+        rsaUtilitiesFindingsLog->setPlainText(
+            QStringLiteral(
+                "RSA Utilities Findings\n\n"
+                "Result\n"
+                "Failed to start the RSA utility process."
+            )
+        );
+
+        delete combinedOutput;
+        process->deleteLater();
+    }
+}
+
 
 
 void MainWindow::runEntropyCommand()

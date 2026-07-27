@@ -111,6 +111,18 @@ private:
     QTextEdit *readSearchFindingsLog;
     QTextEdit *readSearchOutputLog;
 
+    QWidget *rsaUtilitiesTab;
+    QTabWidget *rsaUtilitiesDetailsTabs;
+    QComboBox *rsaUtilityCombo;
+    QStackedWidget *rsaUtilityInputStack;
+    QLineEdit *rsaUtilityFilePath;
+    QPushButton *rsaUtilityBrowseButton;
+    QLineEdit *rsaUtilityPValue;
+    QLineEdit *rsaUtilityQValue;
+    QLineEdit *rsaUtilityEValue;
+    QTextEdit *rsaUtilitiesFindingsLog;
+    QTextEdit *rsaUtilitiesOutputLog;
+
     QWidget *entropyTab;
     QTabWidget *entropyDetailsTabs;
     QComboBox *entropyModeCombo;
@@ -137,6 +149,7 @@ private:
     void buildMagicTab();
     void buildElfInfoTab();
     void buildReadSearchTab();
+    void buildRsaUtilitiesTab();
     void buildEntropyTab();
     void buildPcapTab();
     
@@ -149,6 +162,7 @@ private:
     void runMagicCommand();
     void runElfInfoCommand();
     void runReadSearchCommand();
+    void runRsaUtilitiesCommand();
     void runEntropyCommand();
     void runPcapCommand();
 };
