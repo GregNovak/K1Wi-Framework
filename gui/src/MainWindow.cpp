@@ -759,7 +759,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabs->addTab(magicTab, "MAGIC");
     tabs->addTab(elfInfoTab, "ELFINFO");
     tabs->addTab(readSearchTab, "READ/SEARCH");
-    tabs->addTab(rsaUtilitiesTab, "RSA UTILITIES");
+    tabs->addTab(rsaUtilitiesTab, "RSA TOOLS");
     tabs->addTab(entropyTab, "ENTROPY");
     tabs->addTab(pcapTab, "PCAP");
     
@@ -2035,6 +2035,16 @@ void MainWindow::buildCopyTab()
     QLabel *title = new QLabel("K1Wi Framework - COPY", copyTab);
     mainLayout->addWidget(title);
 
+    QLabel *description = new QLabel(
+        QStringLiteral(
+            "Create verified file or directory copies with "
+            "hash-based integrity reporting."
+        ),
+        copyTab
+    );
+    description->setWordWrap(true);
+    mainLayout->addWidget(description);
+
     QHBoxLayout *sourceLayout = new QHBoxLayout();
     sourcePath = new QLineEdit(copyTab);
     QPushButton *sourceBrowse = new QPushButton("Browse Source", copyTab);
@@ -2057,17 +2067,19 @@ void MainWindow::buildCopyTab()
     copyModeCombo->addItem("Recursive directory copy", "recursive");
     modeLayout->addWidget(new QLabel("COPY mode:", copyTab));
     modeLayout->addWidget(copyModeCombo);
+    modeLayout->addStretch();
     mainLayout->addLayout(modeLayout);
 
     forceCheck = new QCheckBox("Force overwrite / merge existing destination", copyTab);
     mainLayout->addWidget(forceCheck);
 
     QPushButton *runButton = new QPushButton("Run COPY", copyTab);
-    QPushButton *clearButton = new QPushButton("Clear Output", copyTab);
+    QPushButton *clearButton = new QPushButton("Clear Results", copyTab);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     copyDetailsTabs = new QTabWidget(copyTab);
@@ -2305,8 +2317,9 @@ void MainWindow::buildStringTab()
     );
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(runButton, 1);
-    buttonLayout->addWidget(clearButton, 1);
+    buttonLayout->addWidget(runButton);
+    buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     /*
@@ -2459,26 +2472,38 @@ void MainWindow::buildMagicTab()
     targetLayout->addWidget(browseButton);
     mainLayout->addLayout(targetLayout);
 
-    QHBoxLayout *recoveryLayout = new QHBoxLayout();
-    magicRecoveryPath = new QLineEdit(magicTab);
+    QWidget *recoveryRow = new QWidget(magicTab);
+    QHBoxLayout *recoveryLayout =
+        new QHBoxLayout(recoveryRow);
+    recoveryLayout->setContentsMargins(0, 0, 0, 0);
+
+    magicRecoveryPath = new QLineEdit(recoveryRow);
     magicRecoveryBrowseButton =
-        new QPushButton(QStringLiteral("Browse Output"), magicTab);
+        new QPushButton(
+            QStringLiteral("Browse Output"),
+            recoveryRow
+        );
 
     recoveryLayout->addWidget(
-        new QLabel(QStringLiteral("Recovery output:"), magicTab)
+        new QLabel(
+            QStringLiteral("Recovery output:"),
+            recoveryRow
+        )
     );
     recoveryLayout->addWidget(magicRecoveryPath);
     recoveryLayout->addWidget(magicRecoveryBrowseButton);
-    mainLayout->addLayout(recoveryLayout);
+
+    mainLayout->addWidget(recoveryRow);
 
     QPushButton *runButton =
         new QPushButton(QStringLiteral("Run MAGIC"), magicTab);
     QPushButton *clearButton =
-        new QPushButton(QStringLiteral("Clear Output"), magicTab);
+        new QPushButton(QStringLiteral("Clear Results"), magicTab);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     magicDetailsTabs = new QTabWidget(magicTab);
@@ -2512,11 +2537,14 @@ void MainWindow::buildMagicTab()
 
     mainLayout->addWidget(magicDetailsTabs, 1);
 
-    auto updateRecoveryControls = [this]() {
-        const bool enabled = magicModeCombo->currentIndex() == 1;
+    auto updateRecoveryControls = [
+        this,
+        recoveryRow
+    ]() {
+        const bool enabled =
+            magicModeCombo->currentIndex() == 1;
 
-        magicRecoveryPath->setEnabled(enabled);
-        magicRecoveryBrowseButton->setEnabled(enabled);
+        recoveryRow->setVisible(enabled);
 
         if (!enabled) {
             magicRecoveryPath->clear();
@@ -3717,7 +3745,7 @@ void MainWindow::buildEntropyTab()
 
     QPushButton *clearButton =
         new QPushButton(
-            QStringLiteral("Clear Output"),
+            QStringLiteral("Clear Results"),
             entropyTab
         );
 
@@ -3863,11 +3891,12 @@ void MainWindow::buildPcapTab()
     mainLayout->addLayout(targetLayout);
 
     QPushButton *runButton = new QPushButton("Run PCAP", pcapTab);
-    QPushButton *clearButton = new QPushButton("Clear Output", pcapTab);
+    QPushButton *clearButton = new QPushButton("Clear Results", pcapTab);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     QToolBar *reportToolBar =
@@ -5147,6 +5176,16 @@ void MainWindow::buildLyzerTab()
     QLabel *title = new QLabel("K1Wi Framework - LYZER", lyzerTab);
     mainLayout->addWidget(title);
 
+    QLabel *description = new QLabel(
+        QStringLiteral(
+            "Analyze files for embedded data, entropy patterns, "
+            "signatures, carving opportunities, and forensic indicators."
+        ),
+        lyzerTab
+    );
+    description->setWordWrap(true);
+    mainLayout->addWidget(description);
+
     QHBoxLayout *targetLayout = new QHBoxLayout();
     lyzerTargetPath = new QLineEdit(lyzerTab);
     QPushButton *targetBrowse = new QPushButton("Browse Target", lyzerTab);
@@ -5166,14 +5205,16 @@ void MainWindow::buildLyzerTab()
     lyzerModeCombo->addItem("ALL full analysis", "ALL");
     modeLayout->addWidget(new QLabel("LYZER mode:", lyzerTab));
     modeLayout->addWidget(lyzerModeCombo);
+    modeLayout->addStretch();
     mainLayout->addLayout(modeLayout);
 
     QPushButton *runButton = new QPushButton("Run LYZER", lyzerTab);
-    QPushButton *clearButton = new QPushButton("Clear Output", lyzerTab);
+    QPushButton *clearButton = new QPushButton("Clear Results", lyzerTab);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     lyzerDetailsTabs = new QTabWidget(lyzerTab);
@@ -5230,6 +5271,16 @@ void MainWindow::buildExtractTab()
     QLabel *title = new QLabel("K1Wi Framework - EXTRACT", extractTab);
     mainLayout->addWidget(title);
 
+    QLabel *description = new QLabel(
+        QStringLiteral(
+            "Extract embedded files and recoverable content from "
+            "a selected target, with optional recursive processing."
+        ),
+        extractTab
+    );
+    description->setWordWrap(true);
+    mainLayout->addWidget(description);
+
     QHBoxLayout *targetLayout = new QHBoxLayout();
     extractTargetPath = new QLineEdit(extractTab);
     QPushButton *targetBrowse = new QPushButton("Browse Target", extractTab);
@@ -5242,11 +5293,12 @@ void MainWindow::buildExtractTab()
     mainLayout->addWidget(extractRecursiveCheck);
 
     QPushButton *runButton = new QPushButton("Run EXTRACT", extractTab);
-    QPushButton *clearButton = new QPushButton("Clear Output", extractTab);
+    QPushButton *clearButton = new QPushButton("Clear Results", extractTab);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     extractDetailsTabs = new QTabWidget(extractTab);
@@ -5343,24 +5395,35 @@ void MainWindow::buildDelTab()
     delStandardCombo->addItem("Custom pass count", "3");
     standardLayout->addWidget(new QLabel("Deletion standard:", delTab));
     standardLayout->addWidget(delStandardCombo);
+    standardLayout->addStretch();
     mainLayout->addLayout(standardLayout);
 
-    QHBoxLayout *customPassLayout = new QHBoxLayout();
-    delCustomPassCount = new QLineEdit(delTab);
+    QWidget *customPassRow = new QWidget(delTab);
+    QHBoxLayout *customPassLayout =
+        new QHBoxLayout(customPassRow);
+    customPassLayout->setContentsMargins(0, 0, 0, 0);
+
+    delCustomPassCount = new QLineEdit(customPassRow);
     delCustomPassCount->setPlaceholderText("1-33");
-    delCustomPassCount->setEnabled(false);
-    customPassLayout->addWidget(new QLabel("Custom passes:", delTab));
+
+    customPassLayout->addWidget(
+        new QLabel("Custom passes:", customPassRow)
+    );
     customPassLayout->addWidget(delCustomPassCount);
-    mainLayout->addLayout(customPassLayout);
+    customPassLayout->addStretch();
+
+    customPassRow->hide();
+    mainLayout->addWidget(customPassRow);
 
     QPushButton *runButton = new QPushButton("Run DEL", delTab);
-    QPushButton *clearButton = new QPushButton("Clear Output", delTab);
+    QPushButton *clearButton = new QPushButton("Clear Results", delTab);
 
     
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
     mainLayout->addLayout(buttonLayout);
 
     delDetailsTabs = new QTabWidget(delTab);
@@ -5394,16 +5457,22 @@ void MainWindow::buildDelTab()
         }
     });
 
-    connect(delStandardCombo, &QComboBox::currentIndexChanged, this, [this](int) {
-        const bool customSelected =
-            delStandardCombo->currentData().toString() == QStringLiteral("3");
+    connect(
+        delStandardCombo,
+        &QComboBox::currentIndexChanged,
+        this,
+        [this, customPassRow](int) {
+            const bool customSelected =
+                delStandardCombo->currentData().toString() ==
+                QStringLiteral("3");
 
-        delCustomPassCount->setEnabled(customSelected);
+            customPassRow->setVisible(customSelected);
 
-        if (!customSelected) {
-            delCustomPassCount->clear();
+            if (!customSelected) {
+                delCustomPassCount->clear();
+            }
         }
-    });
+    );
 
     
 
@@ -5467,6 +5536,7 @@ void MainWindow::buildHashTab()
         new QLabel(QStringLiteral("Algorithm:"), hashTab)
     );
     algorithmLayout->addWidget(hashAlgorithmCombo);
+    algorithmLayout->addStretch();
 
     mainLayout->addLayout(algorithmLayout);
 
@@ -5490,6 +5560,7 @@ void MainWindow::buildHashTab()
         new QLabel(QStringLiteral("Mode:"), hashTab)
     );
     modeLayout->addWidget(hashModeCombo);
+    modeLayout->addStretch();
 
     mainLayout->addLayout(modeLayout);
 
@@ -5510,36 +5581,48 @@ void MainWindow::buildHashTab()
 
     mainLayout->addLayout(fileLayout);
 
-    QHBoxLayout *expectedLayout = new QHBoxLayout();
+    QWidget *expectedRow = new QWidget(hashTab);
+    QHBoxLayout *expectedLayout =
+        new QHBoxLayout(expectedRow);
+    expectedLayout->setContentsMargins(0, 0, 0, 0);
 
-    hashExpectedValue = new QLineEdit(hashTab);
+    hashExpectedValue = new QLineEdit(expectedRow);
     hashExpectedValue->setPlaceholderText(
-        QStringLiteral("Expected hash for verify mode")
+        QStringLiteral("Enter the expected hash")
     );
 
     expectedLayout->addWidget(
-        new QLabel(QStringLiteral("Expected hash:"), hashTab)
+        new QLabel(
+            QStringLiteral("Expected hash:"),
+            expectedRow
+        )
     );
     expectedLayout->addWidget(hashExpectedValue);
 
-    mainLayout->addLayout(expectedLayout);
+    mainLayout->addWidget(expectedRow);
 
-    QHBoxLayout *compareLayout = new QHBoxLayout();
+    QWidget *compareRow = new QWidget(hashTab);
+    QHBoxLayout *compareLayout =
+        new QHBoxLayout(compareRow);
+    compareLayout->setContentsMargins(0, 0, 0, 0);
 
-    hashCompareFilePath = new QLineEdit(hashTab);
+    hashCompareFilePath = new QLineEdit(compareRow);
 
     QPushButton *compareBrowse = new QPushButton(
         QStringLiteral("Browse Compare File"),
-        hashTab
+        compareRow
     );
 
     compareLayout->addWidget(
-        new QLabel(QStringLiteral("Compare file:"), hashTab)
+        new QLabel(
+            QStringLiteral("Compare file:"),
+            compareRow
+        )
     );
     compareLayout->addWidget(hashCompareFilePath);
     compareLayout->addWidget(compareBrowse);
 
-    mainLayout->addLayout(compareLayout);
+    mainLayout->addWidget(compareRow);
 
     QPushButton *runButton = new QPushButton(
         QStringLiteral("Run HASH"),
@@ -5554,6 +5637,7 @@ void MainWindow::buildHashTab()
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addWidget(runButton);
     buttonLayout->addWidget(clearButton);
+    buttonLayout->addStretch();
 
     mainLayout->addLayout(buttonLayout);
 
@@ -5588,7 +5672,11 @@ void MainWindow::buildHashTab()
 
     mainLayout->addWidget(hashDetailsTabs);
 
-    auto updateHashModeFields = [this, compareBrowse]() {
+    auto updateHashModeFields = [
+        this,
+        expectedRow,
+        compareRow
+    ]() {
         const QString mode =
             hashModeCombo->currentData().toString();
 
@@ -5598,9 +5686,8 @@ void MainWindow::buildHashTab()
         const bool compareMode =
             mode == QStringLiteral("compare");
 
-        hashExpectedValue->setEnabled(verifyMode);
-        hashCompareFilePath->setEnabled(compareMode);
-        compareBrowse->setEnabled(compareMode);
+        expectedRow->setVisible(verifyMode);
+        compareRow->setVisible(compareMode);
 
         if (!verifyMode) {
             hashExpectedValue->clear();
