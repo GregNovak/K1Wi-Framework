@@ -135,6 +135,7 @@ void opus_cmd_print_help(void)
     printf("  EXTRACT (X)  Recursive extraction engine\n");
     printf("  ENTROPY (E)  Shannon entropy calculator\n");
     printf("  MAGIC        Magic byte detector\n");
+    printf("  PCAP         PCAP and PCAPNG network traffic analyzer\n");
     printf("\n");
 
     printf("RSA Tools:\n");

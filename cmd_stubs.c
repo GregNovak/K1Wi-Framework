@@ -162,13 +162,21 @@ int cmd_pcap(const OpusCLI *cli, int argc, char **argv)
         printf("  PCAP --full <file>\n");
         printf("\n");
         printf("Description:\n");
-        printf("  Analyzes classic PCAP packet capture files.\n");
-        printf("  Reports capture metadata, packet counts, byte totals,\n");
-        printf("  timestamps, duration, snap length, and link type.\n");
+        printf("  Analyzes classic PCAP and PCAPNG packet capture files.\n");
+        printf("  Supports raw IPv4 and Ethernet captures, including\n");
+        printf("  IPv4, ARP, IPv6, and other Ethernet frame summaries.\n");
+        printf("  Reports IPv4, TCP, UDP, and ICMP statistics; TCP flags,\n");
+        printf("  addresses, ports, payloads, Base64-like data, and stream\n");
+        printf("  reconstruction. Full mode includes packet-level details.\n");
         printf("\n");
         printf("Options:\n");
-        printf("  --summary  Print capture summary.\n");
-        printf("  --full     Print packet records plus capture summary.\n");
+        printf("  --summary  Print capture, protocol, endpoint, and payload summaries.\n");
+        printf("  --full     Print full packet details, summaries, and reconstructed streams.\n");
+        printf("\n");
+        printf("Examples:\n");
+        printf("  PCAP capture.pcap\n");
+        printf("  PCAP --summary capture.pcapng\n");
+        printf("  PCAP --full capture.pcap\n");
         return 0;
     }
 
