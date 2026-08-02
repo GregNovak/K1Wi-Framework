@@ -1,8 +1,8 @@
 # K1Wi Framework
 
-K1Wi is a Linux-based reverse engineering, cryptanalysis, digital forensics, and file analysis framework written in C.
+K1Wi is a Linux-based reverse engineering, cryptanalysis, digital forensics, network analysis, and file analysis framework. Its command-line core is written in C, with a Qt 6 graphical interface written in C++.
 
-The project combines digital forensics, archive extraction, cryptanalysis, binary inspection, and reverse engineering utilities into a unified command-line framework.
+The project combines digital forensics, archive extraction, cryptanalysis, binary inspection, packet analysis, and reverse engineering utilities in unified command-line and graphical workflows.
 
 ## Features
 
@@ -22,6 +22,17 @@ Major capabilities are grouped into the categories below.
 * File carving
 * JPEG forensic analysis
 * Magic byte detection
+
+### Network Analysis
+
+* Classic PCAP and PCAPNG analysis
+* Raw IPv4 and Ethernet capture support
+* Ethernet IPv4, ARP, IPv6, and other EtherType summaries
+* IPv4, TCP, UDP, and ICMP traffic summaries
+* TCP flag, address, port, and payload statistics
+* Base64-like TCP payload detection and decoded previews
+* TCP stream reconstruction
+* Full packet-level protocol details
 
 ### Extraction
 
@@ -64,39 +75,74 @@ Major capabilities are grouped into the categories below.
 * Secure delete operations
 * Bounded filesystem wipe controls
 
+## Graphical Interface
+
+The `v1.3-dev` branch adds a Qt 6 graphical interface that preserves the underlying CLI workflows while providing input validation, structured findings, consistent controls, and accessible result views.
+
+Available GUI workspaces:
+
+* COPY
+* LYZER
+* EXTRACT
+* DEL
+* HASH
+* STRING
+* MAGIC
+* ELFINFO
+* READ / SEARCH
+* RSA TOOLS
+* ENTROPY
+* PCAP
+
 ## Build
 
 Requirements:
 
 * GCC or Clang
+* GNU Make
+* CMake
+* Qt 6 development libraries
 * libgmp-dev
 * libssl-dev
 * libncurses-dev
 * libjpeg-dev
 
-Install dependencies (Ubuntu/Debian):
+Install dependencies on Ubuntu or Debian:
 
 ```bash
-sudo apt install build-essential libgmp-dev libssl-dev libncurses-dev libjpeg-dev
+sudo apt install build-essential cmake qt6-base-dev libgmp-dev libssl-dev libncurses-dev libjpeg-dev
 ```
 
-Build:
+Build the command-line application:
 
 ```bash
 make
 ```
 
-Clean build:
+Perform a clean CLI build:
 
 ```bash
 make clean
 make
 ```
 
-Run:
+Run the CLI:
 
 ```bash
 ./bin/k1wi
+```
+
+Configure and build the graphical interface:
+
+```bash
+cmake -S gui -B gui/build
+cmake --build gui/build
+```
+
+Run the GUI:
+
+```bash
+./gui/build/k1wi-gui
 ```
 
 ## RSA-ECM Example
@@ -195,6 +241,20 @@ Run full image forensics:
 ./bin/k1wi LYZER image.jpg --full
 ```
 
+Analyze a packet capture:
+
+```bash
+./bin/k1wi PCAP capture.pcap
+./bin/k1wi PCAP --summary capture.pcapng
+./bin/k1wi PCAP --full capture.pcap
+```
+
+Launch the graphical interface:
+
+```bash
+./gui/build/k1wi-gui
+```
+
 ## Testing
 
 Run the regression suite:
@@ -203,16 +263,17 @@ Run the regression suite:
 ./tests/run_regression.sh
 ```
 
-Current v1.2.0 release regression status:
+Current `v1.3-dev` development regression baseline:
 
 ```text
-PASS: 246
+PASS: 382
 FAIL: 0
 SKIP: 0
 ```
 
+The v1.3 baseline covers the CLI, Qt 6 GUI workflows, PCAP analysis, cryptanalysis tools, file-analysis commands, validation behavior, and regression fixtures.
 
-Validated using a clean-room build and full regression suite execution.
+Validated using clean builds, functional GUI smoke tests, and full regression-suite execution.
 
 ## Safety
 
@@ -234,19 +295,21 @@ Always test destructive operations inside disposable directories before use on p
 
 ## Status
 
-Current Version: v1.2.0
+Current stable public release: v1.2.0
 
-K1Wi Framework v1.2.0 is the current stable public release.
+Current development branch: `v1.3-dev`
 
-Release validation:
+K1Wi Framework v1.3.0 is in documentation, final validation, and release preparation. The v1.3 feature set includes the Qt 6 GUI and standalone PCAP and PCAPNG analysis workflows.
+
+Current v1.3 development validation:
 
 ```text
-PASS: 246
+PASS: 382
 FAIL: 0
 SKIP: 0
 ```
 
-Previous stable releases:
+Stable release history:
 
 - v1.0.0 passed regression testing with PASS 72 / FAIL 0 / SKIP 0.
 - v1.1.0 passed regression testing with PASS 92 / FAIL 0 / SKIP 0.
@@ -254,10 +317,6 @@ Previous stable releases:
 
 ## License
 
-K1Wi Framework is released under the MIT License. See `LICENSE` for license terms and `DISCLAIMER.md` for responsible-use and liability information.
-
-K1Wi is released under the MIT License.
+K1Wi Framework is released under the MIT License. See `LICENSE` for the full license terms and `DISCLAIMER.md` for responsible-use and liability information.
 
 Copyright (c) 2026 Gregory B. Novak
-
-See the LICENSE file for full details.
